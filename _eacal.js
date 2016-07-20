@@ -61,7 +61,7 @@ Statement.add("number", (mem, params) => Number(params[0]))
          .add("init",   (mem, params) => mem.stacks[params[0]] = new Stack())
          .add("put",    (mem, params) => {
              let k = mem.exec(params);
-             rw.log(k);
+             rw.log(k.toString());
              return k;
          })
          .add("push",   (mem, params) => {
@@ -168,6 +168,7 @@ Statement.add("number", (mem, params) => Number(params[0]))
          })
          .add("strap",  (mem, params) => params.length ? mem.string += mem.exec(params) : mem.string)
          .add("strcl",  (mem, params) => mem.string = "")
+         .add("v",      (mem, params) => console.log("eacal is currently running."));
 
 const parse = (code) => {
     return code.split(/\r?\n/g).map(e => e.trimLeft().split(" "));
