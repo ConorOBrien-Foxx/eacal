@@ -218,7 +218,10 @@ const eacal = (info) => {
             "less": new StackOp(2, (a, b) => a < b),
             "more": new StackOp(2, (a, b) => a > b),
             "same": new StackOp(2, (a, b) => a == b),
-            "repeat": new StackOp(2, (a, b) => a.repeat(b))
+            "repeat": new StackOp(2, (a, b) => a.repeat(b)),
+            "slice": new StackOp(2, (a, x, y) => a.slice(x, y)),
+            "charat": new StackOp(1, (s) => s.charCodeAt()),
+            "tochar": new StackOp(1, (s) => String.fromCharCode(s))
         },
         eventQueue: [],
         enqueue: (f) => memory.eventQueue.push(f),
