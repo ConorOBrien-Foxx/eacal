@@ -13,8 +13,7 @@ class Stack extends Array {
 }
 
 class Tape {
-    constructor(args){
-        let [size, min, max, def] = (args || [Infinity, -Infinity, Infinity, 0])
+    constructor([size = Infinity, min = -Infinity, max = Infinity, def = 0]){
         this.tape = {0: 0};
         this.pointer = 0;
         this.size = size;
