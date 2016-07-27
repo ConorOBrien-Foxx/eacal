@@ -12,6 +12,39 @@ class Stack extends Array {
     }
 }
 
+class Tape {
+    constructor(args){
+        let [size, min, max, def] = (args || [Infinity, -Infinity, Infinity, 0])
+        this.tape = {0: 0};
+        this.pointer = 0;
+        this.size = size;
+        this.min = min;
+        this.max = max;
+        this.def = def;
+    }
+    
+    set(value){
+        while(value < this.min)
+            value += this.max + 1;
+        
+        while(value > this.max)
+            value -= this.max + 1;
+        
+        this.tape[this.pointer] = value;
+    }
+    
+    get(){
+        if(typeof this.tape[this.pointer] === "undefined"){
+            this.tape[this.pointer] = this.def;
+        }
+        if(this.pointer > this.max){
+            error(`${this.pointer} is out of bounds`, "-")
+        }
+        return this.tape[this.pointer];
+    }
+    
+}
+
 class Statement {
     constructor(key, effect){
         this.key = key;
@@ -28,6 +61,7 @@ Statement.members = new Map();
 const UNDEFINED = Symbol("undefined");
 
 Statement.add("number",  (mem, params) => Number(params[0]))
+         .add("numlist", (mem, params) => params.map(Number))
          .add("string",  (mem, params) => {
              let str = params.join(" ");
              for(let i = 0; i < str.length; i++){
@@ -172,6 +206,24 @@ Statement.add("number",  (mem, params) => Number(params[0]))
          .add("strcl",   (mem, params) => mem.string = "")
          .add("v",       (mem, params) => console.log("eacal is currently running."))
          .add(";",       (mem, params) => UNDEFINED)    // comment
+         .add("initape", (mem, params) => mem.tapes[params.shift()] = new Tape(mem.exec(params)))
+         .add("tape",    (mem, params) => mem.tapes[params.shift()])
+         .add("setape",  (mem, params) => {
+             let tapeName = params.shift();
+             return mem.tapes[tapeName].set(mem.exec(params));
+         })
+         .add("getape",  (mem, params) => {
+             let tapeName = params.shift();
+             return mem.tapes[tapeName].get();
+         })
+         .add("setptr",     (mem, params) => {
+             let tapeName = params.shift();
+             return mem.tapes[tapeName].pointer = mem.exec(params);
+         })
+         .add("getptr",     (mem, params) => {
+             let tapeName = params.shift();
+             return mem.tapes[tapeName].pointer;
+         });
 
 const parse = (code) => {
     return code.split(/\r?\n/g).map(e => e.trimLeft().split(" "));
@@ -209,6 +261,7 @@ const eacal = (info) => {
         stacks: {
             func: new Stack()
         },
+        tapes: {},
         funcs: {
             "add": new StackOp(2, (a, b) => a + b),
             "inc": new StackOp(1, (a) => 1 + a),
