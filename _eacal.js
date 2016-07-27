@@ -27,8 +27,8 @@ Statement.members = new Map();
 
 const UNDEFINED = Symbol("undefined");
 
-Statement.add("number", (mem, params) => Number(params[0]))
-         .add("string", (mem, params) => {
+Statement.add("number",  (mem, params) => Number(params[0]))
+         .add("string",  (mem, params) => {
              let str = params.join(" ");
              for(let i = 0; i < str.length; i++){
                  if(str[i] === "\\"){
@@ -42,71 +42,73 @@ Statement.add("number", (mem, params) => Number(params[0]))
              }
              return str;
          })
-         .add("regex",  (mem, params) => {
+         .add("regex",   (mem, params) => {
              let flags = params.shift();
              return new RegExp(mem.exec(params), flags);
          })
-         .add("empty",  (mem, params) => {
+         .add("empty",   (mem, params) => {
              let type = params.shift();
              return type === "number" ? 0 : type === "string" ? "" : [];
          })
-         .add("space",  (mem, params) => " ")
-         .add("tab",  (mem, params) => "\t")
-         .add("newline",  (mem, params) => "\n")
-         .add("print",  (mem, params) => {
+         .add("space",   (mem, params) => " ")
+         .add("tab",     (mem, params) => "\t")
+         .add("newline", (mem, params) => "\n")
+         .add("print",   (mem, params) => {
              let k = mem.exec(params);
              rw.logln(k);
              return k;
          })
-         .add("init",   (mem, params) => mem.stacks[params[0]] = new Stack())
-         .add("put",    (mem, params) => {
+         .add("write",   (mem, params) => rw.write(params.shift(), mem.exec(params)))
+         .add("read",    (mem, params) => rw.read(params[0]))
+         .add("init",    (mem, params) => mem.stacks[params[0]] = new Stack())
+         .add("put",     (mem, params) => {
              let k = mem.exec(params);
              rw.log(k.toString());
              return k;
          })
-         .add("push",   (mem, params) => {
+         .add("push",    (mem, params) => {
              let name = params.shift()
              let value = mem.exec(params);
              mem.stacks[name].push(value)
              return value;
          })
-         .add("pop",    (mem, params) => mem.stacks[params[0]].pop())
-         .add("stack",  (mem, params) => mem.stacks[params[0]])
-         .add("func",   (mem, params) => mem.funcs[params.join(" ")])
-         .add("label",  (mem, params) => 0)
-         .add("eval",   (mem, params) => {
+         .add("pop",     (mem, params) => mem.stacks[params[0]].pop())
+         .add("stack",   (mem, params) => mem.stacks[params[0]])
+         .add("func",    (mem, params) => mem.funcs[params.join(" ")])
+         .add("label",   (mem, params) => 0)
+         .add("eval",    (mem, params) => {
              return {
                  exec: (mem, nextParams) =>
                     mem.exec(params.concat(nextParams || []))
              };
          })
-         .add("exec",   (mem, params) => {
+         .add("exec",    (mem, params) => {
              let [nextP, f] = params.join(" ").split(/\s*--\s*/).map(e => e.split(" "));
              return mem.exec(f).exec(mem, ...nextP);
          })
-         .add("set",    (mem, params) => {
+         .add("set",     (mem, params) => {
              let key = params.shift();
              let value = mem.exec(params);
              mem.object[key] = value;
              return value;
          })
-         .add("get",    (mem, params) => mem.object[params[0]])
-         .add("goto",   (mem, params) => !mem.labels.has(params[0]) ? error(`"${params[0]}" is not a valid label.`, mem.index) : mem.jump(mem.labels.get(params[0])))
-         .add("rem",    (mem, params) => UNDEFINED)
-         .add("arg",    (mem, params) => {
-             if(params[0] === "all")
+         .add("get",     (mem, params) => mem.object[params[0]])
+         .add("goto",    (mem, params) => !mem.labels.has(params[0]) ? error(`"${params[0]}" is not a valid label.`, mem.index) : mem.jump(mem.labels.get(params[0])))
+         .add("rem",     (mem, params) => UNDEFINED)
+         .add("arg",     (mem, params) => {
+             if(params[0] === "all" || !params.length)
                  return mem.args;
              
              let value = mem.exec(params);
              // console.log("SDFSDF", value, mem.args);
              return mem.args[value];
          })
-         .add("on",     (mem, params) => {
+         .add("on",      (mem, params) => {
              let event = params.shift();
              let func = mem.exec(params);
              mem.listen(event, func);
          })
-         .add("cast",   (mem, params) => {
+         .add("cast",    (mem, params) => {
              let type = params.shift();
              return mem.casts.get(type)(mem.exec(params));
          })
@@ -131,44 +133,45 @@ Statement.add("number", (mem, params) => Number(params[0]))
                  // error("yield called outside of call");
              // }
          // })
-         .add("exit",   (mem, params) => {
+         .add("exit",    (mem, params) => {
              mem.running = false;
          })
-         .add("if",     (mem, params) => {
+         .add("if",      (mem, params) => {
              let value = mem.exec(params);
              if(!value){
                  mem.index++;
              }
          })
-         .add("curry",  (mem, params) => {
+         .add("curry",   (mem, params) => {
              return {
                  exec: (mem, ...toExec) => {
                      return mem.exec(params.concat(toExec));
                  }
              };
          })
-         .add("define", (mem, params) => {
+         .add("define",  (mem, params) => {
              let newCommand = params.shift();
              let func = mem.exec(params);
              Statement.add(newCommand, (mem, params) => {
                  return func.exec(mem, ...params);
              });
          })
-         .add("alias",  (mem, params) => {
+         .add("alias",   (mem, params) => {
              let alias = params.shift();
              let orig = params.shift();
              Statement.members.set(alias, Statement.members.get(orig));
          })
-         .add("adef",   (mem, params) => {
+         .add("adef",    (mem, params) => {
              mem.defBody.push(params);
          })
-         .add("defun",  (mem, params) => {
+         .add("defun",   (mem, params) => {
              // TODO
              mem.defBody = [];
          })
-         .add("strap",  (mem, params) => params.length ? mem.string += mem.exec(params) : mem.string)
-         .add("strcl",  (mem, params) => mem.string = "")
-         .add("v",      (mem, params) => console.log("eacal is currently running."));
+         .add("strap",   (mem, params) => params.length ? mem.string += mem.exec(params) : mem.string)
+         .add("strcl",   (mem, params) => mem.string = "")
+         .add("v",       (mem, params) => console.log("eacal is currently running."))
+         .add(";",       (mem, params) => UNDEFINED)    // comment
 
 const parse = (code) => {
     return code.split(/\r?\n/g).map(e => e.trimLeft().split(" "));
