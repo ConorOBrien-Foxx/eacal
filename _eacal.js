@@ -1,7 +1,7 @@
 const rw = require("readwrite");
 
 const error = (msg, line) => {
-    console.log(`${line}: Error: ${msg}`);
+    console.error(`${line}: Error: ${msg}`);
     process.exit();
 }
 
@@ -93,6 +93,7 @@ Statement.add("number",  (mem, params) => Number(params[0]))
          })
          .add("write",   (mem, params) => rw.write(params.shift(), mem.exec(params)))
          .add("read",    (mem, params) => rw.read(params[0]))
+         .add("file",    (mem, params) => process.argv[1])
          .add("init",    (mem, params) => mem.stacks[params[0]] = new Stack())
          .add("put",     (mem, params) => {
              let k = mem.exec(params);
